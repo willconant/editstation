@@ -1,9 +1,14 @@
 import {adaptCreatePostParams, createPost} from './CreatePost';
+import {adaptUpdatePostParams, updatePost} from './UpdatePost';
 import {loadPosts} from './LoadPosts';
 
 let adaptors = {
     createPost: async function(params) {
         return await createPost(adaptCreatePostParams(params));
+    },
+
+    updatePost: async function(params) {
+        return await updatePost(adaptUpdatePostParams(params));
     },
 
     loadPosts: async function(params) {
@@ -16,7 +21,7 @@ export async function adaptAjaxCall(method: string, params: any) {
 
     if (!method) {
         return {
-            error: 'invalid ajax method ' + method;
+            error: 'invalid ajax method ' + method
         }
     }
 

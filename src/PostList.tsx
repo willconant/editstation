@@ -28,7 +28,7 @@ export default class PostList extends React.Component<PostListProps, void> {
                     </thead>
                     <tbody>
                         {this.props.posts.map(post => (
-                            <tr>
+                            <tr key={post._id || 'null'}>
                                 <td><a href="#" onClick={e => this.clickEditPost(e, post)}>{post.title}</a></td>
                                 <td>{post.started}</td>
                                 <td>{post.published}</td>

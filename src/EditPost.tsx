@@ -21,7 +21,7 @@ export default class EditPost extends React.Component<EditPostProps, void> {
     }
 
     componentDidMount() {
-        if (!this.props.post.id) {
+        if (!this.props.post._id) {
             this.titleInput.focus();
             this.titleInput.select();
         }
