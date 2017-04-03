@@ -1,6 +1,7 @@
 import * as React from 'react';
 import './App.css';
 import Store from './Model/Store';
+import Menu from './Menu';
 import PostList from './PostList';
 import EditPost from './EditPost';
 import {observer} from 'mobx-react';
@@ -16,6 +17,7 @@ export default class App extends React.Component<AppProps, void> {
     render() {
         return (
             <div className="App">
+                <Menu store={this.props.store}/>
                 {
                     this.props.store.currentPost ? (
                         <EditPost

@@ -25,6 +25,11 @@ export default class Store {
         )
     }
 
+    goToList() {
+        this.currentPost = null;
+        this.pushState({mode: 'postList'});
+    }
+
     startNewPost() {
         this.currentPost = new Post();
         this.currentPost.title = 'Untitled Post';
@@ -87,6 +92,17 @@ export default class Store {
     handlePopState(state: any) {
         if (state === null || state.mode === 'postList') {
             this.currentPost = null;
+        }
+        else if (state.mode === 'editPost') {
+            this.currentPost = this.posts.filter(post => post._id === state.postId)[0] || null;
+        }
+        else if (state.mode === 'newPost') {
+            let post = new Post();
+            post.title = 'Untitled Post';
+            post.body = '';
+            post.started = new Date().toISOString();
+
+            this.currentPost = post;
         }
     }
 
