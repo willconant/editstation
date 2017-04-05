@@ -23,4 +23,6 @@ export async function updatePost(params: UpdatePostParams) {
         doc.update = params.updated;
         return doc;
     });
+
+    return {ok: true};
 }

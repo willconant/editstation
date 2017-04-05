@@ -4,46 +4,55 @@ let querystring = require('querystring');
 
 import Post from './Post';
 
-export default class Store {
-    @observable counter: number = 0
-    @observable posts: Array<Post> = []
-    @observable currentPost: Post | null = null
-    @observable editPostIdAfterLoad: string | null = null
+interface StoreState {
+    mode: 'postList' | 'newPost' | 'editPost'
+    postId?: string
+}
 
+export default class Store {
+    @observable state: StoreState
+    @observable posts: Array<Post> = []
+    @observable draftPost: Post | null
+
+    @observable postsAreLoaded = false
+
+    postLoadFunctions: Array<() => void> = []
+    
     loadPosts() {
         fetch('/ajax/loadPosts').then(
             response => response.json().then(
                 json => {
                     this.posts = json.posts;
+                    this.postsAreLoaded = true;
 
-                    if (this.editPostIdAfterLoad) {
-                        this.currentPost = this.posts.filter(post => post._id === this.editPostIdAfterLoad)[0] || null;
-                        this.editPostIdAfterLoad = null;
+                    for (let f of this.postLoadFunctions) {
+                        f();
                     }
                 }
             )
         )
     }
 
-    goToList() {
-        this.currentPost = null;
-        this.pushState({mode: 'postList'});
+    doAfterPostsAreLoaded(f: () => void) {
+        if (!this.postsAreLoaded) {
+            this.postLoadFunctions.push(f);
+        }
+        else {
+            f();
+        }
     }
 
-    startNewPost() {
-        this.currentPost = new Post();
-        this.currentPost.title = 'Untitled Post';
-        this.currentPost.body = '';
-        this.currentPost.started = new Date().toISOString();
-        this.pushState({mode: 'newPost'});
+    getPostById(postId: string) {
+        for (let post of this.posts) {
+            if (post._id === postId) {
+                return post;
+            }
+        }
+
+        return null;
     }
 
-    editPost(post: Post) {
-        this.currentPost = post;
-        this.pushState({mode: 'editPost', postId: post._id});
-    }
-
-    prepareState(state: any) {
+    prepareState(state: StoreState) {
         let title = '';
 
         switch (state.mode) {
@@ -66,52 +75,69 @@ export default class Store {
         return [state, title, '/?' + querystring.stringify(state)];
     }
 
-    pushState(state: any) {
+    pushState(state: StoreState) {
         history.pushState.apply(history, this.prepareState(state));
+        this.applyState(state);
     }
 
-    replaceState(state: any) {
+    replaceState(state: StoreState) {
         history.replaceState.apply(history, this.prepareState(state));
+        this.applyState(state);
     }
 
-    restoreState(state: any) {
+    restoreState(state: StoreState) {
+        this.state = state;
+        this.applyState(state);
+    }
+
+    handlePopState(state: StoreState) {
+        this.state = state;
+        this.applyState(state);
+    }
+
+    applyState(state: StoreState) {
+        this.state = state;
+
         if (state.mode === 'postList') {
-            this.currentPost = null;
-        }
-        else if (state.mode === 'editPost') {
-            this.editPostIdAfterLoad = state.postId;
+            this.draftPost = null;
         }
         else if (state.mode === 'newPost') {
-            this.startNewPost();
+            this.initNewPostDraft();
         }
-        else {
-            throw new Error('invalid mode: ' + state.mode);
+        else if (state.mode === 'editPost') {
+            this.initEditPostDraft(state.postId!);
         }
     }
 
-    handlePopState(state: any) {
-        if (state === null || state.mode === 'postList') {
-            this.currentPost = null;
-        }
-        else if (state.mode === 'editPost') {
-            this.currentPost = this.posts.filter(post => post._id === state.postId)[0] || null;
-        }
-        else if (state.mode === 'newPost') {
-            let post = new Post();
-            post.title = 'Untitled Post';
-            post.body = '';
-            post.started = new Date().toISOString();
+    initNewPostDraft() {
+        let post = new Post();
+        post.title = 'Untitled Post';
+        post.body = '';
+        post.started = new Date().toISOString();
 
-            this.currentPost = post;
-        }
+        this.draftPost = post;
+    }
+
+    initEditPostDraft(postId: string) {
+        this.doAfterPostsAreLoaded(() => {
+            let post = this.getPostById(postId);
+
+            if (post === null) {
+                throw new Error('cannot load post ' + postId);
+            }
+            else {
+                this.draftPost = Object.assign(new Post(), post);
+            }
+        })
     }
 
     savePost() {
-        if (!this.currentPost) {
-            throw new Error('cannot save post if editPost is null');
+        if (!this.draftPost) {
+            throw new Error('cannot save post if draftPost is null');
         }
 
-        let post = this.currentPost;
+        // make a copy before saving the post
+        let post = Object.assign(new Post(), this.draftPost);
 
         if (!post._id) {
             let init = {
@@ -150,7 +176,8 @@ export default class Store {
             fetch('/ajax/updatePost', init).then(
                 response => response.json().then(
                     json => {
-                        // nothing to do, I guess
+                        // replace the old post in the list with the copy we made above
+                        this.posts = this.posts.map(postInList => postInList._id === post._id ? post : postInList);
                     }
                 )
             )

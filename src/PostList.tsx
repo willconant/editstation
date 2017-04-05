@@ -6,14 +6,14 @@ import {observer} from 'mobx-react';
 interface PostListProps {
     posts: Array<Post>
     onClickStartNewPost: () => void
-    onClickEditPost: (post: Post) => void
+    onClickEditPost: (postId: string) => void
 }
 
 @observer
 export default class PostList extends React.Component<PostListProps, void> {
-    clickEditPost(event: any, post: Post) {
+    clickEditPost(event: any, postId: string) {
         event.preventDefault();
-        this.props.onClickEditPost(post);
+        this.props.onClickEditPost(postId);
     }
     render() {
         return (
@@ -29,7 +29,7 @@ export default class PostList extends React.Component<PostListProps, void> {
                     <tbody>
                         {this.props.posts.map(post => (
                             <tr key={post._id || 'null'}>
-                                <td><a href="#" onClick={e => this.clickEditPost(e, post)}>{post.title}</a></td>
+                                <td><a href="#" onClick={e => this.clickEditPost(e, post._id!)}>{post.title}</a></td>
                                 <td>{post.started}</td>
                                 <td>{post.published}</td>
                             </tr>

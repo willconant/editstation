@@ -13,12 +13,7 @@ export default class Menu extends React.Component<MenuProps, void> {
         return (
             <div className="Menu pure-menu pure-menu-horizontal">
                 <ul className="pure-menu-list">
-                    <MenuItem selected={!this.props.store.currentPost} onClick={() => this.props.store.goToList()} label="All Posts"/>
-                    {
-                        this.props.store.currentPost ? (
-                            <MenuItem selected={!!this.props.store.currentPost} onClick={() => {}} label={this.props.store.currentPost._id ? 'Edit Post' : 'New Post'}/>
-                        ) : null
-                    }
+                    <MenuItem selected={this.props.store.state.mode === 'postList'} onClick={() => this.props.store.pushState({mode: 'postList'})} label="All Posts"/>
                 </ul>
             </div>
         )
